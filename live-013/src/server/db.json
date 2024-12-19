@@ -1,7 +1,9 @@
 {
   "users": [
-    { "id": 1, "name": "Andrey", "email": "andreyaraujo.dev@gmail.com" },
-    { "id": 2, "name": "Araujo", "email": "araujo@gmail.com" },
-    { "id": 3, "name": "Braga", "email": "braga@gmail.com" }
+    {
+      "id": "1",
+      "name": "Andrey",
+      "email": "andreyaraujo.dev@gmail.com"
+    }
   ]
 }
