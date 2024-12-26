@@ -14,7 +14,7 @@ export class UsersService {
     });
     if (emailTaken) throw new ConflictException('Email already taken');
 
-    const hashedPassword = await hash(createUserDto.password, 8);
+    const hashedPassword = await hash(createUserDto.password, 12);
 
     const user = await this.usersRepository.create({
       data: {
