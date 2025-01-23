@@ -3,7 +3,8 @@ import { CreateTransactionDto } from '../dto/create-transaction.dto';
 import { UpdateTransactionDto } from '../dto/update-transaction.dto';
 import { TransactionsRepository } from '../../../shared/database/repositories/transactions.repository';
 import { ValidateBankAccountOwnershipService } from '../../bank-accounts/services/validate-bank-account-ownership.service';
-import { ValidateCategoryOwnershipService } from './validate-category-ownership.service';
+import { ValidateCategoryOwnershipService } from '../../categories/services/validate-category-ownership.service';
+import { ValidateTransactionOwnershipService } from './validate-transaction-ownership.service';
 
 @Injectable()
 export class TransactionsService {
@@ -11,6 +12,7 @@ export class TransactionsService {
     private readonly transactionsRepository: TransactionsRepository,
     private readonly validateBankAccountOwnershipService: ValidateBankAccountOwnershipService,
     private readonly validateCategoryOwnershipService: ValidateCategoryOwnershipService,
+    private readonly validateTransactionOwnershipService: ValidateTransactionOwnershipService,
   ) {}
 
   findAllByUserId(userId: string) {
@@ -40,26 +42,66 @@ export class TransactionsService {
     });
   }
 
-  update(transactionId: string, updateTransactionDto: UpdateTransactionDto) {
-    return `This action updates a #${transactionId} transaction`;
+  async update(
+    userId: string,
+    transactionId: string,
+    updateTransactionDto: UpdateTransactionDto,
+  ) {
+    const { name, type, date, value, bankAccountId, categoryId } =
+      updateTransactionDto;
+
+    await this.validateEntitiesOwnership({
+      categoryId,
+      userId,
+      bankAccountId,
+      transactionId,
+    });
+
+    return this.transactionsRepository.update({
+      where: { id: transactionId },
+      data: {
+        name,
+        type,
+        date,
+        value,
+        bankAccountId,
+        categoryId,
+      },
+    });
   }
 
-  remove(transactionId: string) {
-    return `This action removes a #${transactionId} transaction`;
+  async remove(userId: string, transactionId: string) {
+    await this.validateEntitiesOwnership({ userId, transactionId });
+
+    await this.transactionsRepository.delete({
+      where: { id: transactionId },
+    });
   }
 
   private async validateEntitiesOwnership({
     userId,
     bankAccountId,
     categoryId,
+    transactionId,
   }: {
     userId: string;
-    categoryId: string;
-    bankAccountId: string;
+    categoryId?: string;
+    bankAccountId?: string;
+    transactionId?: string;
   }) {
     await Promise.all([
-      this.validateBankAccountOwnershipService.validate(userId, bankAccountId),
-      this.validateCategoryOwnershipService.validate(userId, categoryId),
+      transactionId &&
+        this.validateTransactionOwnershipService.validate(
+          userId,
+          transactionId,
+        ),
+      bankAccountId &&
+        this.validateBankAccountOwnershipService.validate(
+          userId,
+          bankAccountId,
+        ),
+      categoryId &&
+        this.validateCategoryOwnershipService.validate(userId, categoryId),
     ]);
   }
 }
