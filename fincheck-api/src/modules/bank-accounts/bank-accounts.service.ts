@@ -25,22 +25,50 @@ export class BankAccountsService {
     return this.bankAccountRepository.findMany({ where: { userId } });
   }
 
-  async findOneByUserId(userId: string, id: string) {
-    const bankAccount = await this.bankAccountRepository.findUnique({
-      where: { userId, id },
+  async findOneByUserId(userId: string, bankAccountId: string) {
+    await this.validateBankAccountOwnership(userId, bankAccountId);
+
+    return this.bankAccountRepository.findFirst({
+      where: { userId, id: bankAccountId },
     });
-    if (!bankAccount) {
-      throw new NotFoundException('Bank account does not exist');
+  }
+
+  async update(
+    userId: string,
+    bankAccountId: string,
+    updateBankAccountDto: UpdateBankAccountDto,
+  ) {
+    await this.validateBankAccountOwnership(userId, bankAccountId);
+
+    const { type, initialBalance, color, name } = updateBankAccountDto;
+    return this.bankAccountRepository.update({
+      where: { id: bankAccountId },
+      data: {
+        type,
+        initialBalance,
+        color,
+        name,
+      },
+    });
+  }
+
+  async remove(userId: string, bankAccountId: string) {
+    await this.validateBankAccountOwnership(userId, bankAccountId);
+
+    await this.bankAccountRepository.delete({
+      where: { id: bankAccountId },
+    });
+  }
+
+  private async validateBankAccountOwnership(
+    userId: string,
+    bankAccountId: string,
+  ) {
+    const isOwner = await this.bankAccountRepository.findFirst({
+      where: { userId, id: bankAccountId },
+    });
+    if (!isOwner) {
+      throw new NotFoundException('Bank account not found');
     }
-
-    return bankAccount;
-  }
-
-  update(id: string, updateBankAccountDto: UpdateBankAccountDto) {
-    return `This action updates a #${id} bankAccount`;
-  }
-
-  remove(id: string) {
-    return `This action removes a #${id} bankAccount`;
   }
 }
